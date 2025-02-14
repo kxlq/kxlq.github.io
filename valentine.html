@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Valentine's Heart Clicker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<style>
+body {
+    font-family: 'Dancing Script', cursive, 'Arial', sans-serif;
+    background-color: #ffe0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+#game-container {
+    position: relative;
+    width: 80vw;
+    height: 80vh;
+    border: 5px dashed #ff69b4;
+    border-radius: 15px;
+    transition: opacity 1s ease;
+    opacity: 1;
+    display: none; /* Initially hidden */
+}
+
+.heart {
+    position: absolute;
+    font-size: 36px;
+    color: red;
+    user-select: none;
+    animation: fall linear forwards;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.heart:hover {
+    transform: scale(1.2);
+}
+
+/* Animation for clicked hearts */
+.heart.collected {
+    animation: collectHeart 0.5s ease forwards;
+}
+
+@keyframes collectHeart {
+    0% {
+        transform: scale(1.2); /* Start slightly larger */
+        opacity: 1;
+    }
+    50% {
+      transform: scale(1.5) translateY(-50px); /* Move up and grow */
+      opacity: 0.8
+    }
+    100% {
+        transform: scale(0.5) translateY(-100px); /* Shrink and move up further */
+        opacity: 0;
+    }
+}
+
+#message-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 224, 224, 0.95);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 10;
+    font-family: 'Caveat', cursive, 'Courier New', monospace;
+    font-size: 20px;
+    color: #ff1493;
+    padding: 20px;
+    text-align: center;
+}
+
+#message {
+    overflow: hidden;
+    white-space: pre-wrap;
+    border-right: .15em solid #ff1493;
+    margin: 0 auto;
+    font-family: 'Caveat', cursive, 'Courier New', monospace;
+
+}
+
+#counter {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: #ff69b4;
+    font-size: 20px;
+    z-index: 5;
+    font-family: 'Pacifico', cursive, 'Arial', sans-serif;
+}
+
+#hearts-needed {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #ff69b4;
+    font-size: 20px;
+    z-index: 5;
+    font-family: 'Pacifico', cursive, 'Arial', sans-serif;
+}
+
+@keyframes fall {
+    0% {
+        opacity: 1;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(100vh);
+    }
+}
+
+#start-button {
+    padding: 15px 30px;
+    font-size: 24px;
+    background-color: #ff69b4;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: 'Pacifico', cursive, 'Arial', sans-serif;
+}
+
+#start-button:hover {
+    background-color: #ff1493;
+}
+
+</style>
+</head>
+<body>
+<button id="start-button">Start Valentine's Game</button>
+
+<div id="game-container">
+    <div id="counter">Hearts Clicked: 0</div>
+    <div id="hearts-needed">Hearts Needed: 75</div>
+</div>
+
+<div id="message-container">
+    <div id="message"></div>
+</div>
+
+<audio id="click-sound" src="click.mp3"></audio>
+<audio id="win-sound" src="win.mp3"></audio>
+<audio id="background-music" src="background_music.mp3" loop></audio>
+
+<script>
+const gameContainer = document.getElementById('game-container');
+const messageContainer = document.getElementById('message-container');
+const messageElement = document.getElementById('message');
+const counterElement = document.getElementById('counter');
+const heartsNeededElement = document.getElementById('hearts-needed');
+const startButton = document.getElementById('start-button');
+const clickSound = document.getElementById('click-sound');
+const winSound = document.getElementById('win-sound');
+const backgroundMusic = document.getElementById('background-music');
+const heartsToClick = 75;
+let heartsClicked = 0;
+
+function startGame() {
+    startButton.style.display = 'none';
+    gameContainer.style.display = 'block';
+    backgroundMusic.play();
+    setInterval(createHeart, 300);
+}
+
+function createHeart() {
+    const heart = document.createElement('div');
+    heart.classList.add('heart');
+    heart.textContent = '♥';
+
+    const x = Math.random() * gameContainer.offsetWidth;
+    const y = -20;
+    const randomColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+    const duration = 5 + Math.random() * 5;
+
+    heart.style.left = `${x}px`;
+    heart.style.top = `${y}px`;
+    heart.style.color = randomColor;
+    heart.style.animationDuration = `${duration}s`;
+
+    heart.addEventListener('click', () => {
+        clickSound.currentTime = 0;
+        clickSound.play();
+
+        // Add the 'collected' class for animation
+        heart.classList.add('collected');
+
+        // Remove the heart *after* the animation
+        heart.addEventListener('animationend', () => {
+          heart.remove();
+        });
+
+        heartsClicked++;
+        updateCounter();
+        if (heartsClicked >= heartsToClick) {
+            showValentineMessage();
+        }
+    });
+      // Remove falling animation when is clicked
+    heart.addEventListener('animationend', () => {
+        if(!heart.classList.contains("collected")){
+            heart.remove();
+        }
+
+    });
+
+    gameContainer.appendChild(heart);
+}
+
+function updateCounter() {
+    counterElement.textContent = `Hearts Clicked: ${heartsClicked}`;
+}
+
+function showValentineMessage() {
+    gameContainer.style.opacity = 0;
+    backgroundMusic.pause();
+
+    setTimeout(() => {
+        gameContainer.style.display = 'none';
+        messageContainer.style.display = 'flex';
+
+        winSound.play();
+          confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 }
+          });
+
+        const messageText = `My Dearest Valentine,\n\nWords seem to fail me whenever I try to express the depth of my affection for you.  You've brought so much light and joy into my life, like a constant, warm sunshine that chases away any gloom. Every moment with you is a precious gift, a memory I cherish.  You're not just my love, you're my best friend, my confidant, the one I can always turn to.  Thank you for being you, for your kindness, your laughter, and your unwavering love.\n\nI love you so much Kenzie. I will always love you, forever and ever  \n\nWith all my love, forever and always,\nYour Valentine`;
+
+        messageElement.textContent = "";
+        let i = 0;
+        const speed = 50;
+
+        function typeWriter() {
+            if (i < messageText.length) {
+                messageElement.textContent += messageText.charAt(i);
+                i++;
+                setTimeout(typeWriter, speed);
+            } else {
+                messageElement.style.borderRight = "none";
+            }
+        }
+        typeWriter();
+    }, 1000);
+}
+
+startButton.addEventListener('click', startGame);
+
+</script>
+
+</body>
+</html> 
